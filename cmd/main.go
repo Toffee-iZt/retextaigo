@@ -13,7 +13,7 @@ import (
 var (
 	paraphrase = flag.Bool("p", true, "paraphrase text")
 	summarize  = flag.Bool("s", false, "summarize text")
-	count      = flag.Uint("c", 1, "paraphrase results count")
+	count      = flag.Uint("c", 1, "max paraphrase results count")
 	maxLength  = flag.Int("l", 150, "max summarization length")
 	input      = flag.String("f", "", "input file")
 	output     = flag.String("o", "", "output file")
@@ -24,6 +24,17 @@ var client = retextaigo.NewClient(&http.Client{})
 func main() {
 	flag.Parse()
 
+	var parSpec, sumSpec bool
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "s" {
+			sumSpec = true
+		} else if f.Name == "p" {
+			parSpec = true
+		}
+	})
+	if sumSpec && *summarize && !parSpec {
+		*paraphrase = false
+	}
 	if *paraphrase == *summarize {
 		flag.Usage()
 		os.Exit(1)
