@@ -2,42 +2,40 @@ package main
 
 import (
 	"flag"
-	"net/http"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/Toffee-iZt/retextaigo"
+	"github.com/karalef/retextaigo"
 )
 
 var (
 	paraphrase = flag.Bool("p", true, "paraphrase text")
 	summarize  = flag.Bool("s", false, "summarize text")
+	extend     = flag.Bool("e", false, "extend text")
 	count      = flag.Uint("c", 1, "max paraphrase results count")
 	maxLength  = flag.Int("l", 150, "max summarization length")
 	input      = flag.String("f", "", "input file")
 	output     = flag.String("o", "", "output file")
 )
 
-var client = retextaigo.NewClient(&http.Client{})
+var client = retextaigo.New(nil)
 
 func main() {
 	flag.Parse()
 
-	var parSpec, sumSpec bool
+	var parSpec, sumSpec, extSpec bool
 	flag.Visit(func(f *flag.Flag) {
-		if f.Name == "s" {
+		switch f.Name {
+		case "s":
 			sumSpec = true
-		} else if f.Name == "p" {
+		case "p":
 			parSpec = true
+		case "e":
+			extSpec = true
 		}
 	})
-	if sumSpec && *summarize && !parSpec {
+	if (sumSpec && *summarize || extSpec && *extend) && !parSpec {
 		*paraphrase = false
-	}
-	if *paraphrase == *summarize {
-		flag.Usage()
-		os.Exit(1)
 	}
 
 	available, err := client.IsAvailable()
@@ -61,10 +59,13 @@ func main() {
 	println("waiting\n")
 
 	var result string
-	if *paraphrase {
+	switch {
+	case *paraphrase:
 		result = doParaphrase(source)
-	} else {
+	case *summarize:
 		result = doSummarization(source)
+	case *extend:
+		result = doExtension(source)
 	}
 
 	out := os.Stdout
@@ -78,60 +79,44 @@ func main() {
 }
 
 func doParaphrase(src string) string {
-	status, q, err := client.QueueParaphrase(src, "")
+	task, err := client.Paraphrase(src, "")
 	check(err)
-	checkStatus(status)
-	for {
-		status, c, err := client.QueueCheckParaphrase(q.TaskID)
-		if !checkQueue(status, err, c.Ready, c.Successful) {
-			time.Sleep(time.Second)
-			continue
-		}
-		n := int(*count)
-		if n > len(c.Result) {
-			n = len(c.Result)
-		}
-		return strings.Join(c.Result[:n], "\n\n")
+	res, err := task.Wait()
+	checkResult(err, res.Successful)
+	n := int(*count)
+	if n > len(res.Result) {
+		n = len(res.Result)
 	}
+	return strings.Join(res.Result[:n], "\n\n")
 }
 
 func doSummarization(src string) string {
-	status, q, err := client.QueueSummarization(src, *maxLength, "")
+	task, err := client.Summarize(src, *maxLength)
 	check(err)
-	checkStatus(status)
-	for {
-		status, c, err := client.QueueCheckSummarization(q.TaskID)
-		if !checkQueue(status, err, c.Ready, c.Successful) {
-			time.Sleep(time.Second)
-			continue
-		}
-		return c.Result
-	}
+	res, err := task.Wait()
+	checkResult(err, res.Successful)
+	return res.Result
 }
 
-func checkQueue(status string, err error, ready, successful bool) bool {
+func doExtension(src string) string {
+	task, err := client.Extension(src, "")
 	check(err)
-	checkStatus(status)
-	if !ready {
-		return false
-	}
+	res, err := task.Wait()
+	checkResult(err, res.Successful)
+	return res.Result.Complete()
+}
+
+func checkResult(err error, successful bool) {
+	check(err)
 	if !successful {
 		println("unseccessful")
 		os.Exit(1)
 	}
-	return true
 }
 
 func check(err error) {
 	if err != nil {
 		println(err.Error())
-		os.Exit(1)
-	}
-}
-
-func checkStatus(status string) {
-	if status != retextaigo.StatusOK {
-		println("invalid status:", status)
 		os.Exit(1)
 	}
 }
