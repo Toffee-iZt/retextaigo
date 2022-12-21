@@ -1,3 +1,3 @@
-module github.com/Toffee-iZt/retextaigo
+module github.com/karalef/retextaigo
 
 go 1.18
