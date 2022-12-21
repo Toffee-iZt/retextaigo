@@ -33,10 +33,10 @@ func (e Extended) Complete() string {
 }
 
 // Extension generates extended text for source.
-func (c *Client) Extension(source string, lang string) (*Task[[]string], error) {
+func (c *Client) Extension(source string, lang string) (*Task[Extended], error) {
 	var add map[string]any
 	if lang != "" {
 		add = map[string]any{"lang": lang}
 	}
-	return queue[[]string](c, api.TaskExtension, source, add)
+	return queue[Extended](c, api.TaskExtension, source, add)
 }

@@ -36,7 +36,7 @@ func (a *API) QueueTask(task TaskType, source string, add map[string]any) (*Resp
 type Checked[T any] struct {
 	Ready      bool `json:"ready"`
 	Successful bool `json:"successful"`
-	Result     *T   `json:"result"`
+	Result     T    `json:"result"`
 }
 
 // QueueCheck checks task for completion.

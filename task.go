@@ -48,11 +48,11 @@ func (t *Task[T]) Check() (*api.Checked[T], error) {
 	return resp.Data, nil
 }
 
-func (t *Task[T]) Wait(interval ...time.Duration) (*api.Checked[T], error) {
+func (t *Task[T]) Wait(interval ...time.Duration) (*Result[T], error) {
 	return t.WaitContext(context.Background(), interval...)
 }
 
-func (t *Task[T]) WaitContext(ctx context.Context, interval ...time.Duration) (*api.Checked[T], error) {
+func (t *Task[T]) WaitContext(ctx context.Context, interval ...time.Duration) (*Result[T], error) {
 	inter := time.Second * 1
 	if len(interval) > 0 {
 		inter = interval[0]
@@ -68,8 +68,14 @@ func (t *Task[T]) WaitContext(ctx context.Context, interval ...time.Duration) (*
 			return nil, err
 		}
 		if resp.Ready {
-			return resp, nil
+			return &Result[T]{Successful: resp.Successful, Result: resp.Result}, nil
 		}
 		time.Sleep(inter)
 	}
+}
+
+// Result is a result of a task.
+type Result[T any] struct {
+	Successful bool
+	Result     T
 }
