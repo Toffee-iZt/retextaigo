@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 )
@@ -44,6 +45,10 @@ func post[T any](a *API, meth string, data map[string]any) (*Response[T], error)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("http: " + resp.Status)
+	}
+
 	var response Response[T]
 	err = json.NewDecoder(resp.Body).Decode(&response)
 	if err != nil {
@@ -58,6 +63,10 @@ func get[T any](a *API, meth string, query url.Values) (*Response[T], error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("http: " + resp.Status)
+	}
 
 	var response Response[T]
 	err = json.NewDecoder(resp.Body).Decode(&response)

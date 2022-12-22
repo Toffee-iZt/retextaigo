@@ -11,10 +11,12 @@ type Synonyms struct {
 }
 
 // Synonyms generates synonyms for source.
-func (c *Client) Synonyms(source string, lang string) (*Task[Synonyms], error) {
-	var add map[string]any
-	if lang != "" {
-		add = map[string]any{"lang": lang}
+func (c *Client) Synonyms(source string, lang ...string) (*Task[Synonyms], error) {
+	l, err := c.lang(source, api.TaskSynonyms, lang...)
+	if err != nil {
+		return nil, err
 	}
-	return queue[Synonyms](c, api.TaskSynonyms, source, add)
+	return queue[Synonyms](c, api.TaskSynonyms, source, map[string]any{
+		"lang": l,
+	})
 }
