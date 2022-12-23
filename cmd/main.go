@@ -12,15 +12,13 @@ var (
 	paraphrase = flag.Bool("p", true, "paraphrase text")
 	summarize  = flag.Bool("s", false, "summarize text")
 	extend     = flag.Bool("e", false, "extend text")
-	count      = flag.Uint("c", 1, "max paraphrase results count")
-	maxLength  = flag.Int("l", 150, "max summarization length")
+	count      = flag.Uint("c", 1, "max number of paraphrase results")
+	maxLength  = flag.Uint("l", 150, "max length of the summarized text")
 	input      = flag.String("f", "", "input file")
 	output     = flag.String("o", "", "output file")
 )
 
-var client = retextaigo.New(nil)
-
-func main() {
+func init() {
 	flag.Parse()
 
 	var parSpec, sumSpec, extSpec bool
@@ -38,25 +36,42 @@ func main() {
 		*paraphrase = false
 	}
 
+	isTrue := 0
+	if *paraphrase {
+		isTrue++
+	}
+	if *summarize {
+		isTrue++
+	}
+	if *extend {
+		isTrue++
+	}
+	if isTrue != 1 {
+		exit("specify one of -p, -s or -e")
+	}
+}
+
+var client = retextaigo.New(nil)
+
+func main() {
 	available, err := client.IsAvailable()
 	check(err)
 	if !available {
-		println("service is unavailable")
+		println("service is not available")
 		return
 	}
 
-	var source = strings.Join(flag.Args(), " ")
-	if *input != "" {
+	source := strings.Join(flag.Args(), " ")
+	if source == "" && *input != "" {
 		d, err := os.ReadFile(*input)
 		check(err)
 		source = string(d)
 	}
 	if len(source) == 0 {
-		println("specify input")
-		os.Exit(1)
+		exit("specify input")
 	}
 
-	println("waiting\n")
+	println("waiting...\n")
 
 	var result string
 	switch {
@@ -79,7 +94,7 @@ func main() {
 }
 
 func doParaphrase(src string) string {
-	task, err := client.Paraphrase(src, "")
+	task, err := client.Paraphrase(src)
 	check(err)
 	res, err := task.Wait()
 	checkResult(err, res.Successful)
@@ -91,7 +106,7 @@ func doParaphrase(src string) string {
 }
 
 func doSummarization(src string) string {
-	task, err := client.Summarize(src, *maxLength)
+	task, err := client.Summarize(src, int(*maxLength))
 	check(err)
 	res, err := task.Wait()
 	checkResult(err, res.Successful)
@@ -99,7 +114,7 @@ func doSummarization(src string) string {
 }
 
 func doExtension(src string) string {
-	task, err := client.Extension(src, "")
+	task, err := client.Extension(src)
 	check(err)
 	res, err := task.Wait()
 	checkResult(err, res.Successful)
@@ -109,14 +124,17 @@ func doExtension(src string) string {
 func checkResult(err error, successful bool) {
 	check(err)
 	if !successful {
-		println("unseccessful")
-		os.Exit(1)
+		exit("unseccessful")
 	}
 }
 
 func check(err error) {
 	if err != nil {
-		println(err.Error())
-		os.Exit(1)
+		exit(err.Error())
 	}
+}
+
+func exit(s string) {
+	println(s)
+	os.Exit(1)
 }
