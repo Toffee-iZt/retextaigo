@@ -3,9 +3,9 @@ package retextaigo
 import "github.com/karalef/retextaigo/api"
 
 // Extended is extended response.
-type Extended []any
+type Extended api.Extended
 
-// Complete returns complete text.
+// Complete returns completed text.
 // It uses first string from each extension variant.
 func (e Extended) Complete() string {
 	l := 0

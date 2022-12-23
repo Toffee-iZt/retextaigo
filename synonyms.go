@@ -4,19 +4,13 @@ import (
 	"github.com/karalef/retextaigo/api"
 )
 
-// Synonyms is synonyms response.
-type Synonyms struct {
-	Range   []int    `json:"range"`
-	Synonym []string `json:"synonym"`
-}
-
 // Synonyms generates synonyms for source.
-func (c *Client) Synonyms(source string, lang ...string) (*Task[Synonyms], error) {
+func (c *Client) Synonyms(source string, lang ...string) (*Task[api.Synonyms], error) {
 	l, err := c.lang(source, api.TaskSynonyms, lang...)
 	if err != nil {
 		return nil, err
 	}
-	return queue[Synonyms](c, api.TaskSynonyms, source, map[string]any{
+	return queue[api.Synonyms](c, api.TaskSynonyms, source, map[string]any{
 		"lang": l,
 	})
 }
