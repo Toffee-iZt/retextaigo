@@ -7,8 +7,8 @@ import (
 	"github.com/karalef/retextaigo/api"
 )
 
-func queue[T any](c *Client, task api.TaskType, source string, add map[string]any) (*Task[T], error) {
-	resp, err := c.api.QueueTask(task, source, add)
+func queue[T any](ctx context.Context, c *Client, task api.TaskType, source string, add map[string]any) (*Task[T], error) {
+	resp, err := c.api.QueueTask(ctx, task, source, add)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +37,8 @@ func (t *Task[T]) Lang() string {
 	return t.lang
 }
 
-func (t *Task[T]) Check() (*api.Checked[T], error) {
-	resp, err := api.QueueCheck[T](t.c.api, t.id)
+func (t *Task[T]) Check(ctx context.Context) (*api.Checked[T], error) {
+	resp, err := api.QueueCheck[T](ctx, t.c.api, t.id)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (t *Task[T]) WaitContext(ctx context.Context, interval ...time.Duration) (*
 		inter = interval[0]
 	}
 	for {
-		resp, err := t.Check()
+		resp, err := t.Check(ctx)
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"strings"
@@ -94,9 +95,7 @@ func main() {
 }
 
 func doParaphrase(src string) string {
-	task, err := client.Paraphrase(src)
-	check(err)
-	res, err := task.Wait()
+	res, err := client.AwaitParaphrase(context.Background(), src)
 	checkResult(err, res.Successful)
 	n := int(*count)
 	if n > len(res.Result) {
@@ -106,17 +105,13 @@ func doParaphrase(src string) string {
 }
 
 func doSummarization(src string) string {
-	task, err := client.Summarize(src, int(*maxLength))
-	check(err)
-	res, err := task.Wait()
+	res, err := client.AwaitSummarize(context.Background(), src, int(*maxLength))
 	checkResult(err, res.Successful)
 	return res.Result
 }
 
 func doExtension(src string) string {
-	task, err := client.Extension(src)
-	check(err)
-	res, err := task.Wait()
+	res, err := client.AwaitExtension(context.Background(), src)
 	checkResult(err, res.Successful)
 	return res.Result.Complete()
 }

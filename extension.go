@@ -1,6 +1,10 @@
 package retextaigo
 
-import "github.com/karalef/retextaigo/api"
+import (
+	"context"
+
+	"github.com/karalef/retextaigo/api"
+)
 
 // Extended is extended response.
 type Extended api.Extended
@@ -33,12 +37,21 @@ func (e Extended) Complete() string {
 }
 
 // Extension generates extended text for source.
-func (c *Client) Extension(source string, lang ...string) (*Task[Extended], error) {
-	l, err := c.lang(source, api.TaskExtension, lang...)
+func (c *Client) Extension(ctx context.Context, source string, lang ...string) (*Task[Extended], error) {
+	l, err := c.lang(ctx, source, lang...)
 	if err != nil {
 		return nil, err
 	}
-	return queue[Extended](c, api.TaskExtension, source, map[string]any{
+	return queue[Extended](ctx, c, api.TaskExtension, source, map[string]any{
 		"lang": l,
 	})
+}
+
+// AwaitExtension generates extended text for source.
+func (c *Client) AwaitExtension(ctx context.Context, source string, lang ...string) (*Result[Extended], error) {
+	t, err := c.Extension(ctx, source, lang...)
+	if err != nil {
+		return nil, err
+	}
+	return t.WaitContext(ctx)
 }

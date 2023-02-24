@@ -1,6 +1,7 @@
 package retextaigo
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/karalef/retextaigo/api"
@@ -19,13 +20,13 @@ type Client struct {
 }
 
 // IsAvailable checks if retext.ai is available.
-func (c *Client) IsAvailable() (bool, error) {
-	return c.api.IsAvailable()
+func (c *Client) IsAvailable(ctx ...context.Context) (bool, error) {
+	return c.api.IsAvailable(ctx...)
 }
 
 // Tokenize text.
-func (c *Client) Tokenize(source string, requestFrom string) (*api.Tokenized, error) {
-	r, err := c.api.Tokenize(source, requestFrom)
+func (c *Client) Tokenize(ctx context.Context, source string) (*api.Tokenized, error) {
+	r, err := c.api.Tokenize(ctx, source)
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +36,11 @@ func (c *Client) Tokenize(source string, requestFrom string) (*api.Tokenized, er
 	return r.Data, nil
 }
 
-func (c *Client) lang(source string, from api.TaskType, specified ...string) (string, error) {
+func (c *Client) lang(ctx context.Context, source string, specified ...string) (string, error) {
 	if len(specified) > 0 {
 		return specified[0], nil
 	}
-	t, err := c.Tokenize(source, string(from))
+	t, err := c.Tokenize(ctx, source)
 	if err != nil {
 		return "", err
 	}

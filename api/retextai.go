@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -57,12 +58,12 @@ func do[T any](a *API, req *http.Request) (*Response[T], error) {
 	return &response, nil
 }
 
-func post[T any](a *API, meth string, data map[string]any) (*Response[T], error) {
+func post[T any](ctx context.Context, a *API, meth string, data map[string]any) (*Response[T], error) {
 	d, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
-	req, err := http.NewRequest(http.MethodPost, api+meth, bytes.NewBuffer(d))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, api+meth, bytes.NewBuffer(d))
 	if err != nil {
 		return nil, err
 	}
@@ -71,25 +72,29 @@ func post[T any](a *API, meth string, data map[string]any) (*Response[T], error)
 	return do[T](a, req)
 }
 
-func get[T any](a *API, meth string, query url.Values) (*Response[T], error) {
-	req, err := http.NewRequest(http.MethodGet, api+meth+"?"+query.Encode(), nil)
+func get[T any](ctx context.Context, a *API, meth string, query url.Values) (*Response[T], error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, api+meth+"?"+query.Encode(), nil)
 	if err != nil {
 		return nil, err
 	}
 	return do[T](a, req)
 }
 
-func (a *API) options(meth string) (int, error) {
-	req, _ := http.NewRequest(http.MethodOptions, api+meth, nil)
+func (a *API) options(ctx context.Context, meth string) (int, error) {
+	req, _ := http.NewRequestWithContext(ctx, http.MethodOptions, api+meth, nil)
 	resp, err := a.Client.Do(req)
 	return resp.StatusCode, err
 }
 
 // IsAvailable returns true if all endpoints are available.
-func (a *API) IsAvailable() (bool, error) {
+func (a *API) IsAvailable(ctx ...context.Context) (bool, error) {
+	c := context.Background()
+	if len(ctx) > 0 {
+		c = ctx[0]
+	}
 	endpoints := [...]string{tokenizeEndpoint, queueEndpoint, queueCheckEndpoint}
 	for _, e := range endpoints {
-		status, err := a.options(e)
+		status, err := a.options(c, e)
 		if err != nil || status != http.StatusOK {
 			return false, err
 		}
